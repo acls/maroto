@@ -170,6 +170,42 @@ func TestText_Add(t *testing.T) {
 		// Act
 		sut.Add("hello", cell, textProp)
 	})
+	t.Run("when single line with left align and internal link is set, should apply blue color and render internal link", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		cell := &entity.Cell{X: 0, Y: 0, Width: 100, Height: 50}
+		originalColor := &props.Color{Red: 0, Green: 0, Blue: 0}
+		page := 3
+		textProp := &props.Text{
+			Family:       fontfamily.Arial,
+			Style:        fontstyle.Normal,
+			Size:         10,
+			Align:        align.Left,
+			InternalLink: &page,
+		}
+
+		font := mocks.NewFont(t)
+		font.EXPECT().SetFont(fontfamily.Arial, fontstyle.Normal, 10.0)
+		font.EXPECT().GetHeight(fontfamily.Arial, fontstyle.Normal, 10.0).Return(5.0)
+		font.EXPECT().GetColor().Return(originalColor)
+		font.EXPECT().SetColor(&props.BlueColor)
+		font.EXPECT().SetColor(originalColor)
+
+		pdf := mocks.NewFpdf(t)
+		pdf.EXPECT().UnicodeTranslatorFromDescriptor("").Return(func(s string) string { return s })
+		pdf.EXPECT().GetStringWidth("hello").Return(20.0)
+		pdf.EXPECT().GetMargins().Return(0.0, 0.0, 0.0, 0.0)
+		pdf.EXPECT().Text(0.0, 5.0, "hello")
+		pdf.EXPECT().AddLink().Return(1)
+		pdf.EXPECT().SetLink(1, 0.0, 3)
+		// Link(x+left, y+top-fontHeight, textWidth, fontHeight, linkID) = Link(0, 0, 20, 5, 1)
+		pdf.EXPECT().Link(0.0, 0.0, 20.0, 5.0, 1)
+
+		sut := gofpdf.NewText(pdf, mocks.NewMath(t), font)
+
+		// Act
+		sut.Add("hello", cell, textProp)
+	})
 	t.Run("when single line with right align, should offset text by full remaining width", func(t *testing.T) {
 		t.Parallel()
 		// Arrange

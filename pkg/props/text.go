@@ -32,6 +32,9 @@ type Text struct {
 	Color *Color
 	// Hyperlink define a link to be opened when the text is clicked.
 	Hyperlink *string
+	// InternalLink define a page number to navigate to when the text is clicked.
+	// The page number is 1-indexed.
+	InternalLink *int
 }
 
 // ToMap converts a Text to a map.
@@ -82,6 +85,10 @@ func (t *Text) ToMap() map[string]any {
 
 	if t.Hyperlink != nil {
 		m["prop_hyperlink"] = *t.Hyperlink
+	}
+
+	if t.InternalLink != nil {
+		m["prop_internal_link"] = *t.InternalLink
 	}
 
 	return m

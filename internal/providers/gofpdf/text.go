@@ -60,9 +60,16 @@ func (s *Text) Add(text string, cell *entity.Cell, textProp *props.Text) {
 		s.font.SetColor(textProp.Color)
 	}
 
-	// override style if hyperlink is set
-	if textProp.Hyperlink != nil {
+	// override style if hyperlink or internal link is set
+	if textProp.Hyperlink != nil || textProp.InternalLink != nil {
 		s.font.SetColor(&props.BlueColor)
+	}
+
+	// Create internal link ID if needed
+	var internalLinkID int
+	if textProp.InternalLink != nil {
+		internalLinkID = s.pdf.AddLink()
+		s.pdf.SetLink(internalLinkID, 0, *textProp.InternalLink)
 	}
 
 	y += fontHeight
@@ -73,7 +80,7 @@ func (s *Text) Add(text string, cell *entity.Cell, textProp *props.Text) {
 
 	// If should add one line
 	if stringWidth <= width {
-		s.addLine(textProp, x, width, y, stringWidth, unicodeText)
+		s.addLine(textProp, x, width, y, stringWidth, unicodeText, internalLinkID)
 		s.font.SetColor(originalColor)
 		return
 	}
@@ -92,7 +99,7 @@ func (s *Text) Add(text string, cell *entity.Cell, textProp *props.Text) {
 	for index, line := range lines {
 		lineWidth := s.pdf.GetStringWidth(line)
 
-		s.addLine(textProp, x, width, y+float64(index)*fontHeight+accumulateOffsetY, lineWidth, line)
+		s.addLine(textProp, x, width, y+float64(index)*fontHeight+accumulateOffsetY, lineWidth, line, internalLinkID)
 		accumulateOffsetY += textProp.VerticalPadding
 	}
 
@@ -174,7 +181,7 @@ func (s *Text) getLinesBreakingLineWithDash(words string, colWidth float64) []st
 	return lines
 }
 
-func (s *Text) addLine(textProp *props.Text, xColOffset, colWidth, yColOffset, textWidth float64, text string) {
+func (s *Text) addLine(textProp *props.Text, xColOffset, colWidth, yColOffset, textWidth float64, text string, internalLinkID int) {
 	left, top, _, _ := s.pdf.GetMargins()
 
 	fontHeight := s.font.GetHeight(textProp.Family, textProp.Style, textProp.Size)
@@ -184,6 +191,8 @@ func (s *Text) addLine(textProp *props.Text, xColOffset, colWidth, yColOffset, t
 
 		if textProp.Hyperlink != nil {
 			s.pdf.LinkString(xColOffset+left, yColOffset+top-fontHeight, textWidth, fontHeight, *textProp.Hyperlink)
+		} else if internalLinkID > 0 {
+			s.pdf.Link(xColOffset+left, yColOffset+top-fontHeight, textWidth, fontHeight, internalLinkID)
 		}
 
 		return
@@ -216,6 +225,8 @@ func (s *Text) addLine(textProp *props.Text, xColOffset, colWidth, yColOffset, t
 
 		if textProp.Hyperlink != nil {
 			s.pdf.LinkString(initX, yColOffset+top-fontHeight, finishX-initX, fontHeight, *textProp.Hyperlink)
+		} else if internalLinkID > 0 {
+			s.pdf.Link(initX, yColOffset+top-fontHeight, finishX-initX, fontHeight, internalLinkID)
 		}
 
 		return
@@ -231,6 +242,8 @@ func (s *Text) addLine(textProp *props.Text, xColOffset, colWidth, yColOffset, t
 
 	if textProp.Hyperlink != nil {
 		s.pdf.LinkString(dx+xColOffset+left, yColOffset+top-fontHeight, textWidth, fontHeight, *textProp.Hyperlink)
+	} else if internalLinkID > 0 {
+		s.pdf.Link(dx+xColOffset+left, yColOffset+top-fontHeight, textWidth, fontHeight, internalLinkID)
 	}
 
 	s.pdf.Text(dx+xColOffset+left, yColOffset+top, text)

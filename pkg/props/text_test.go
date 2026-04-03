@@ -192,6 +192,18 @@ func TestText_ToMap(t *testing.T) {
 		assert.Equal(t, "RGB(100, 50, 200)", m["prop_color"])
 		assert.Equal(t, "https://www.google.com", m["prop_hyperlink"])
 	})
+	t.Run("when internal link is set, should include internal_link in map", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		page := 3
+		prop := props.Text{InternalLink: &page}
+
+		// Act
+		m := prop.ToMap()
+
+		// Assert
+		assert.Equal(t, 3, m["prop_internal_link"])
+	})
 	t.Run("when right is set, should include right in map", func(t *testing.T) {
 		t.Parallel()
 		// Arrange
